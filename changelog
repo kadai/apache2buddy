@@ -2,6 +2,86 @@ CHANGELOG
 
 When		Who		What
 ======================================================================================
+2020-03-27	Richard Forth	Closes #319.
+                                myip.dnsomatic.com Too Many Requests, error
+				suppression. 
+
+				NOTES/ERRATA: 
+				Commit references #316, meant to be #319.
+2020-03-14	"wiechu"	Updates to the way OS Distribution is detected.
+2020-03-12      "wiechu"	Few cosmetic changes
+2020-03-12      Richard Forth /	Fixed Package management Issue - issue #312
+		"wiechu"
+2020-03-10      Mark Hyde   	PR to address backward compatibilty with
+				MaxClients directive in apache 2.4
+2019-12-28      Richard Forth   Quick fix for issue #304
+				Report MaxConnectionsPerChild as well as
+				MaxRequestsPerChild.
+2019-04-17      Richard Forth   Ubuntu 14.04 went EOL. 
+2019-02-14      Richard Forth   Closes #250
+				Make the serverlimit apply only to prefork
+				model.
+2019-02-14      Richard Forth   Closes #289
+				Apply fixup for borked ps command on Plesk
+				servers.
+2019-02-12      Richard Forth   Closes #294
+				Add verbiage about new --skip-os-version-check
+				option.
+2019-02-12      psytester       PR #294
+				exclude rotatelogs binary from $current_proc_count
+				calculation
+2019-02-12      Richard Forth   Closes Issue #292
+				Updated man page textfile for 2019
+2019-02-09      Richard Forth   Closes Issue #283
+				This update treates varnich differently to
+				other detected services due to changes in
+				behvious from 4.1+
+2019-02-09      Richard Forth   Revert changes made in  #283
+				This went in staging but then got reverted as
+				it caused problems and had inexpected
+				behaviour.
+2019-02-09      Richard Forth   Closes Issue #283
+				Service detection inprovements to include
+				services not running as root (eg vcache)
+2019-02-01      Richard Forth   Closes Issue #12
+				Detect and skip unexpected directories in
+				glob. Previously these were added to the list
+				of files for processing and caused an
+				exception to be raised.
+2019-01-23      Richard Forth   Closes Issue #287
+				Typo on --skip-os-version-check option
+				rectified.
+2019-01-08      psytester       Added support for SUSE Linux and apache in
+				/opt/apache2
+2018-12-02      Richard Forth   Closes Issue #281
+				Php memory limit was only interpretted in MB.
+				Forced a change that accepts whatever is in
+				the config, eg '128M' or '16G'.
+2018-10-13      Richard Forth   Closes Issue #278
+				logs to log (spelling correction in verbiage)
+2018-10-13      Richard Forth   Closes Issue #194
+				Detect issues getting package updates.
+2018-10-13      Richard Forth   Closes Issue #245
+				Skip OS Version Check option, see --help.
+2018-10-13      Richard Forth   Closes Issue #221
+				Log Uptime in /var/log/apache2buddy.log
+2018-10-13      Richard Forth   Closes Issue #251 
+				Warn if vhost_count exceeds maxclients
+2018-10-12      Richard Forth   Closes Issue #273 Graceful catch of syntax
+				error in httpd.conf when parsing config.
+2018-10-12      Richard Forth   Closes Issue #252 Add verbiage about Apache
+				2.2 EOL. Refer to https://httpd.apache.org/.
+2018-10-12      Richard Forth   Closes Issue #255 Ignore large gzipped files.
+2018-10-12      Richard Forth   Closes Issue #268 Additional verbiage about
+				maxclients/maxrequestworkers being hit only
+				once per lifetime.
+
+				For more information see: 
+				https://github.com/apache/httpd/blob/0b61edca6cdda2737aa1d84a4526c5f9d2e23a8c/server/mpm/prefork/prefork.c#L809
+2018-10-12      Richard Forth   Closes Issue #241 --no-check-pid causes perl
+				error. 
+2018-09-26      Andriy Fetsyuk  Merged a change to support more environments. 
+2018-08-30      Richard Forth   Issue #259 fix fpm support for ubuntu systems. 
 2018-08-28      Richard Forth   Issue #259 add support for ubuntu 18.04 
 2018-05-11      Richard Forth   Issue #253 need to specify a pid to bypass the 
 				'Multple PIDS listeing on port 80' error.
