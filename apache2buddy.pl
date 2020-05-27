@@ -5,6 +5,7 @@ use Getopt::Long qw(:config no_ignore_case bundling pass_through);
 use POSIX;
 use strict;
 use File::Find;
+#use Data::Dumper qw(Dumper);
 ############################################################################################################
 #                            __        ___   __              __    __              __
 #    ____  ____  ____ ______/ /_  ___ |__ \ / /_  __  ______/ /___/ /_  __  ____  / /
@@ -128,7 +129,7 @@ If no options are specified, the basic tests will be run.
 
 	-h, --help		     Print this help message
 	-p, --port=PORT		     Specify an alternate port to check (default: 80)
-	    --pid=PID		     Specify a PID to bypass the "Multiple PIDS listening on port 80" error.
+		--pid=PID		     Specify a PID to bypass the "Multiple PIDS listening on port 80" error.
 	-v, --verbose		     Use verbose output (this is very noisy, only useful for debugging)
 	-n, --nocolor		     Use default terminal color, dont try to be all fancy! 
 	-H, --noheader		     Do not show header title bar.
@@ -138,23 +139,23 @@ If no options are specified, the basic tests will be run.
 	-L, --light-term	     Show colours for a light background terminal.
 	-r, --report		     Implies -HNWK or --noinfo --nowarn --no-ok --noheader --skip-maxclients --skip-php-fatal --skip-updates
 	-P, --no-check-pid	     DON'T Check the Parent Pid File Size (only use if desperate for more info, results may be skewed).
-	    --skip-maxclients	     Skip checking in maxclients was hit recently, can be slow, especialy if you have large log files.
-            --skip-php-fatal         Skip checking for PHP FATAL errors, can be slow, especialy if you have large log files.
-            --skip-updates           Skip checking for package updates, can be slow or problematic, causing the script to hang.
+		--skip-maxclients	     Skip checking in maxclients was hit recently, can be slow, especialy if you have large log files.
+			--skip-php-fatal         Skip checking for PHP FATAL errors, can be slow, especialy if you have large log files.
+			--skip-updates           Skip checking for package updates, can be slow or problematic, causing the script to hang.
 	-O, --skip-os-version-check  Skips past the OS version check.
-                                     Allows one to bypass EOL version showstopper but be mindful:
-                                      skipping the os version check is not recommended as features may be 
-                                      deprecated or removed and apache2buddy is not backward compatible 
-                                      with end of life operating systems, this may cause errors and unpredictable 
-                                      behaviour.
+									 Allows one to bypass EOL version showstopper but be mindful:
+									  skipping the os version check is not recommended as features may be 
+									  deprecated or removed and apache2buddy is not backward compatible 
+									  with end of life operating systems, this may cause errors and unpredictable 
+									  behaviour.
 
 
 Key:
 
-    [ -- ]  = Information
-    [ @@ ]  = Advisory
-    [ >> ]  = Warning
-    [ !! ]  = Critical
+	[ -- ]  = Information
+	[ @@ ]  = Advisory
+	[ >> ]  = Warning
+	[ !! ]  = Critical
 
 
 END_USAGE
@@ -316,82 +317,84 @@ if ( ! $NOCOLOR ) {
 
 sub get_os_platform {
 
-        return @main::os_platform if @main::os_platform; # we already know everything
+	return @main::os_platform if @main::os_platform; # we already know everything
 
-         my @py_scripts = (
-                # platform.linux_distribution() - This function is deprecated since Python 3.5
-                # and removed in Python 3.8. See alternative like the distro package.
-                'import platform; print(platform.linux_distribution())',
-                # platform.dist() -  Deprecated since version 2.6.
-                'import platform; print(platform.dist())',
-                # distro.linux_distribution() - 'distro' is not default installed package
-                'import distro; print(distro.linux_distribution())',
-        );
+	my @py_scripts = (
+		# platform.linux_distribution() - This function is deprecated since Python 3.5
+		# and removed in Python 3.8. See alternative like the distro package.
+		'import platform; print(platform.linux_distribution())',
+		# platform.dist() -  Deprecated since version 2.6.
+		'import platform; print(platform.dist())',
+		# distro.linux_distribution() - 'distro' is not default installed package
+		'import distro; print(distro.linux_distribution())',
+	);
 
-        # Check for python (new in Debian 9 as it doesnt come with it out of the box)
-        my $py_exists = 0;
-        for my $pyname ( qw / python python3 python2 / ) {
-                my $python = `which $pyname`;
-                chomp( $python );
-                unless ( $python ) {
-                        show_crit_box(); 
-                        print "Unable to locate the '$pyname' binary.\n";
-                        next;
-                }
+	# Check for python (new in Debian 9 as it doesnt come with it out of the box)
+	my $py_exists = 0;
+	for my $pyname ( qw / python python3 python2 / ) {
+		my $python = `which $pyname`;
+		chomp( $python );
+		unless ( $python ) {
+			show_crit_box(); 
+			print "Unable to locate the '$pyname' binary.\n";
+			next;
+		}
 
-                $py_exists = 1;
-                if ( ! $NOOK ) { show_ok_box(); print "The '$pyname' binary exists and is available for use: ${CYAN}$python${ENDC}\n" }
+		$py_exists = 1;
+		if ( ! $NOOK ) { show_ok_box(); print "The '$pyname' binary exists and is available for use: ${CYAN}$python${ENDC}\n" }
 
-                print "VERBOSE: Check OS platform\n" if $VERBOSE;
+		print "VERBOSE: Check OS platform\n" if $VERBOSE;
 
-                for my $pyscript (@py_scripts) {
-                        print "VERBOSE:   $python -c '$pyscript'\n" if $VERBOSE;
-                        my $raw_platform = `$python -c \"$pyscript\"`;
-                        # ('CentOS Linux', '7.3.1611', 'Core')
-                        chomp($raw_platform);
-                        next unless $raw_platform;
+		for my $pyscript (@py_scripts) {
+			print "VERBOSE:   $python -c '$pyscript'\n" if $VERBOSE;
+			my $raw_platform = `$python -c \"$pyscript\"`;
+			# ('CentOS Linux', '7.3.1611', 'Core')
+			chomp($raw_platform);
+			next unless $raw_platform;
 
-                        $raw_platform =~ s/[()']//g;
-                        my ( $distro, $version, $codename ) = split( '\s*,\s+', $raw_platform);
-                        next unless $distro;
+			$raw_platform =~ s/[()']//g;
+			my ( $distro, $version, $codename ) = split( '\s*,\s+', $raw_platform);
+			next unless $distro;
 
-                        @main::os_platform = ( $distro, $version, $codename );
-                        return ( $distro, $version, $codename );
-                }
+			@main::os_platform = ( $distro, $version, $codename );
+			return ( $distro, $version, $codename );
+		}
 
-        }
+	}
 
-        # we can't determine OS and Version
-        if ( $py_exists ) {
-                show_crit_box(); print "Python scripting failed. Python requires package 'distro' or 'platform' to determine the Operating System and Version.\n";
-        } else {
-                show_crit_box(); print "Unable to locate the any 'python' binary. This script requires python to determine the Operating System and Version.\n";
-                show_info_box(); print "${YELLOW}To fix this make sure the python2 or python3 package is installed.${ENDC}\n";
-        }
-        exit;
+	# we can't determine OS and Version
+	if ( $py_exists ) {
+		show_crit_box(); print "Python scripting failed. Python requires package 'distro' or 'platform' to determine the Operating System and Version.\n";
+	} else {
+		show_crit_box(); print "Unable to locate the any 'python' binary. This script requires python to determine the Operating System and Version.\n";
+		show_info_box(); print "${YELLOW}To fix this make sure the python2 or python3 package is installed.${ENDC}\n";
+	}
+	exit;
 
-        # XXX instead of calling exit() we can:
-        # @main::os_platform = ( 'Unknown Distro', '0.0', '' );
-        # return @main::os_platform;
+	# XXX instead of calling exit() we can:
+	# @main::os_platform = ( 'Unknown Distro', '0.0', '' );
+	# return @main::os_platform;
 }
 
 sub check_os_support {
 	my ($distro, $version, $codename) = @_;
 	# Please dont make pull requests to add your distro to this list, that doesnt make it supported.
 	# The following distros are what I use to test and deploy apache2buddy and only these distro's are supported.
-	my @supported_os_list = ('Ubuntu',
-				'ubuntu',
-				'Debian',
-				'debian',
-				'Red Hat Enterprise Linux',
-				'Red Hat Enterprise Linux Server',
-				'redhat',
-				'CentOS Linux',
-				'CentOS',
-				'centos',
-				'Scientific Linux',
-				'SUSE Linux Enterprise Server',
-				'SuSE');
+	my @supported_os_list = (
+		'Ubuntu',
+		'ubuntu',
+		'Debian',
+		'debian',
+		'Red Hat Enterprise Linux',
+		'Red Hat Enterprise Linux Server',
+		'redhat',
+		'CentOS Linux',
+		'CentOS',
+		'centos',
+		'Scientific Linux',
+		'SUSE Linux Enterprise Server',
+		'SuSE'
+	);
 	my %sol = map { $_ => 1 } @supported_os_list;
 	
 	my @ubuntu_os_list = ('Ubuntu', 'ubuntu');
@@ -420,11 +423,11 @@ sub check_os_support {
 		# be entertained for unsupported or EOL OS releaases.
 		if (exists($dol{$distro})) {
 			my @debian_version = split('\.', $version);
-                        if ( $VERBOSE ) {
-                                foreach my $item (@debian_version) {
-                                        print "VERBOSE: ".  $item . "\n";
-                                }
-                        }
+				if ( $VERBOSE ) {
+					foreach my $item (@debian_version) {
+						print "VERBOSE: ".  $item . "\n";
+					}
+				}
 			my $major_debian_version = $debian_version[0];
 			if (exists($dsv{$major_debian_version})) {
 				if ( ! $NOOK ) { show_ok_box(); print "This distro version is supported by apache2buddy.pl.\n" }
@@ -453,7 +456,7 @@ sub check_os_support {
 				foreach my $item (@redhat_version) {
 					print "VERBOSE: ".  $item . "\n";
 				}
-       			}
+	   		}
 			my $major_redhat_version = $redhat_version[0];
 			if ( $VERBOSE ) { print "VERBOSE -> Major RedHat Version Detected ". $major_redhat_version . "\n"}
 			if ($major_redhat_version lt 6 ) {
@@ -471,7 +474,7 @@ sub check_os_support {
 				foreach my $item (@suse_version) {
 					print "VERBOSE: ".  $item . "\n";
 				}
-       			}
+	   		}
 			my $major_suse_version = $suse_version[0];
 			if ( $VERBOSE ) { print "VERBOSE -> Major SUSE Version Detected ". $major_suse_version . "\n"}
 			if ($major_suse_version lt 12 ) {
@@ -860,9 +863,9 @@ sub get_memory_usage {
 	# get a list of the pid's for apache running as the appropriate user
 	my @pids = `ps aux | grep $process_name | grep -v root | grep $apache_user | awk \'{ print \$2 }\'`;
 
-        # if length of @pids is still zero then die with an error.
+	# if length of @pids is still zero then die with an error.
 	if (@pids == 0) {
-                show_crit_box(); print ("Error getting a list of PIDs\n");
+		show_crit_box(); print ("Error getting a list of PIDs\n");
 		print ("DEBUG -> Process Name: ".$process_name."\nDEBUG -> Apache_user: ".$apache_user."\nDEBUG -> Search Type: ".$search_type."\n\n");
 		exit 1;
 	} 
@@ -931,8 +934,8 @@ sub get_memory_usage {
 sub test_process {
 	my ($process_name) = @_;
 	# THIS SUBROUTINE WORKS FINE WITH httpd4u EXECUTABLES TOO.
-        # Reduce to only aphanumerics, to deal with "nginx: master process" or any newlnes
-        $process_name = `echo -n $process_name | sed 's/://g'`;
+	# Reduce to only aphanumerics, to deal with "nginx: master process" or any newlnes
+	$process_name = `echo -n $process_name | sed 's/://g'`;
 
 	# the first line of output from "httpd -V" should tell us whether or
 	# not this is Apache
@@ -964,11 +967,10 @@ sub test_process {
 		return $return_val;
 	}
 
-
 	my $return_val = 0;
-        #if ( $output eq '' ) {
-        #    $return_val = 0;
-        #}
+	#if ( $output eq '' ) {
+	#    $return_val = 0;
+	#}
 
 	# check for valid variable
 	if ( ! $output[0] ) { 
@@ -979,10 +981,10 @@ sub test_process {
 		exit;
 	} else {
 		# check for output matching Apache'
-        if ( $output[0] =~ m/^Server version.*Apache\/[0-9].*/ ) {
+		if ( $output[0] =~ m/^Server version.*Apache\/[0-9].*/ ) {
 			$return_val = 1;
 		}
-        elsif ( $output[0] =~ m/^Server version.*Server\/[0-9].*/ ) {
+		elsif ( $output[0] =~ m/^Server version.*Server\/[0-9].*/ ) {
 			print "${YELLOW}Apache server was build with version string \"${CYAN}Server version: Server/....${YELLOW}\" and not as usual \"${CYAN}Server version: Apache/....${YELLOW}\"${ENDC}\n";
 			$return_val = 1;
 		}	 
@@ -1107,42 +1109,42 @@ sub itk_detect {
 # this will determine whether this apache is using the worker or the prefork
 # model based on the way the binary was built
 sub get_apache_model {
-        our $model;
-        my ( $process_name ) = @_;
-        if ( $process_name eq "/usr/sbin/apache2") {
-                # In apache2, worker / prefork / event are no longer compiled-in.
-                # Instead, with is a loaded in module
-                # differing from httpd / httpd24u's process directly, in ubuntu we need to run apache2ctl.
-                $model = `apache2ctl -M 2>&1 | egrep "worker|prefork|event|itk"`;
-                # if we detect itk module, we need to stop immediately:
-                if ($VERBOSE) { print "VERBOSE: $model" }
-                if ($VERBOSE) { print "VERBOSE: ITK DETECTTOR STARTED\n" }
-                itk_detect($model);
-                if ($VERBOSE) { print "VERBOSE: ITK DETECTTOR PASSED\n" }
-                if ($VERBOSE) { print "VERBOSE: $model" }
-                chomp($model);
-                if ($VERBOSE) { print "VERBOSE: $model\n" }
-                if ($VERBOSE) { print "VERBOSE: REGEX Filter started.\n" }
-                $model =~ s/\s*mpm_(.*)_module\s*\S*/$1/;
-                if ($VERBOSE) { print "VERBOSE: REGEX Filter finished.\n" }
-                if ($VERBOSE) { print "VERBOSE: $model\n" }
-                if ($VERBOSE) { print "VERBOSE: Return Value: $model\n" }
-                return $model;
-        } else {
-                $model = `apachectl -M 2>&1 | egrep "worker|prefork|event|itk"`;
-                if ($VERBOSE) { print "VERBOSE: $model" }
-                if ($VERBOSE) { print "VERBOSE: ITK DETECTOR STARTED\n" }
-                itk_detect($model);
-                if ($VERBOSE) { print "VERBOSE: ITK DETECTOR PASSED\n" }
-                chomp($model);
-                if ($VERBOSE) { print "VERBOSE: $model\n" }
-                if ($VERBOSE) { print "VERBOSE: REGEX Filter started.\n" }
-                $model =~ s/\s*mpm_(.*)_module\s*\S*/$1/;
-                if ($VERBOSE) { print "VERBOSE: REGEX Filter finished.\n" }
-                if ($VERBOSE) { print "VERBOSE: $model\n" }
-                if ($VERBOSE) { print "VERBOSE: Return Value: $model\n" }
-                return $model;
-        }
+		our $model;
+		my ( $process_name ) = @_;
+		if ( $process_name eq "/usr/sbin/apache2") {
+			# In apache2, worker / prefork / event are no longer compiled-in.
+			# Instead, with is a loaded in module
+			# differing from httpd / httpd24u's process directly, in ubuntu we need to run apache2ctl.
+			$model = `apache2ctl -M 2>&1 | egrep "worker|prefork|event|itk"`;
+			# if we detect itk module, we need to stop immediately:
+			if ($VERBOSE) { print "VERBOSE: $model" }
+			if ($VERBOSE) { print "VERBOSE: ITK DETECTTOR STARTED\n" }
+			itk_detect($model);
+			if ($VERBOSE) { print "VERBOSE: ITK DETECTTOR PASSED\n" }
+			if ($VERBOSE) { print "VERBOSE: $model" }
+			chomp($model);
+			if ($VERBOSE) { print "VERBOSE: $model\n" }
+			if ($VERBOSE) { print "VERBOSE: REGEX Filter started.\n" }
+			$model =~ s/\s*mpm_(.*)_module\s*\S*/$1/;
+			if ($VERBOSE) { print "VERBOSE: REGEX Filter finished.\n" }
+			if ($VERBOSE) { print "VERBOSE: $model\n" }
+			if ($VERBOSE) { print "VERBOSE: Return Value: $model\n" }
+			return $model;
+		} else {
+			$model = `apachectl -M 2>&1 | egrep "worker|prefork|event|itk"`;
+			if ($VERBOSE) { print "VERBOSE: $model" }
+			if ($VERBOSE) { print "VERBOSE: ITK DETECTOR STARTED\n" }
+			itk_detect($model);
+			if ($VERBOSE) { print "VERBOSE: ITK DETECTOR PASSED\n" }
+			chomp($model);
+			if ($VERBOSE) { print "VERBOSE: $model\n" }
+			if ($VERBOSE) { print "VERBOSE: REGEX Filter started.\n" }
+			$model =~ s/\s*mpm_(.*)_module\s*\S*/$1/;
+			if ($VERBOSE) { print "VERBOSE: REGEX Filter finished.\n" }
+			if ($VERBOSE) { print "VERBOSE: $model\n" }
+			if ($VERBOSE) { print "VERBOSE: Return Value: $model\n" }
+			return $model;
+		}
 }
 
 # this will get the Apache version string
@@ -1158,15 +1160,15 @@ sub get_apache_version {
 		$version =~ s/.*:\s(.*)$/$1/;
 	} elsif ( $process_name eq '/usr/sbin/apache2' ) { 
 		# ubuntu has to be different, so...
-                $version = `LANGUAGE=en_GB.UTF-8 /usr/sbin/apache2ctl -V 2>&1 | grep "Server version"`;
-                chomp($version);
-                $version =~ s/.*:\s(.*)$/$1/;
-        } else {
+		$version = `LANGUAGE=en_GB.UTF-8 /usr/sbin/apache2ctl -V 2>&1 | grep "Server version"`;
+		chomp($version);
+		$version =~ s/.*:\s(.*)$/$1/;
+	} else {
 		# check for compiled from source versions
 		$version = `LANGUAGE=en_GB.UTF-8 $process_name -V 2>&1 | grep "Server version"`;
-                chomp($version);
-                $version =~ s/.*:\s(.*)$/$1/;
-        }
+		chomp($version);
+		$version =~ s/.*:\s(.*)$/$1/;
+	}
 
 	return $version;
 }
@@ -1193,17 +1195,14 @@ sub get_apache_uptime {
 		$uptime =~ s/.*-(.*)/$1/;
 	
 		($hours, $minutes, $seconds) = split(':', $uptime);
-	}
-	elsif ( $uptime =~ m/^.*:.*:.*/ ) {
+	} elsif ( $uptime =~ m/^.*:.*:.*/ ) {
 		$days = 0;
 		($hours, $minutes, $seconds) = split(':', $uptime);
-	}
-	elsif ( $uptime =~ m/^.*:.*/) {
+	} elsif ( $uptime =~ m/^.*:.*/) {
 		$days = 0;
 		$hours = 0;
 		($minutes, $seconds) = split(':', $uptime);	
-	}
-	else {
+	} else {
 		$days = 0;
 		$hours = 0;
 		$minutes = 00;
@@ -1234,20 +1233,18 @@ sub get_php_setting {
 	if ( $config =~ /cli/ ) {
 		if ($VERBOSE) { print "VERBOSE: PHP: Attempting to find real apache php.ini file...\n" }
 		# try to find the apache2 one
-		if ( -f "/etc/php5/apache2/php.ini" ) {
-			our $real_config = "/etc/php5/apache2/php.ini";
-		} elsif ( -f "/etc/php/7.0/apache2/php.ini") {
-			our $real_config = "/etc/php/7.0/apache2/php.ini";
-		} elsif ( -f "/etc/php/7.0/fpm/php.ini") {
-			our $real_config = "/etc/php/7.0/fpm/php.ini";
-		} elsif ( -f "/etc/php/7.1/apache2/php.ini") {
-                        our $real_config = "/etc/php/7.1/apache2/php.ini";
-		} elsif ( -f "/etc/php/7.1/fpm/php.ini") {
-			our $real_config = "/etc/php/7.1/fpm/php.ini";
-                } elsif ( -f "/etc/php/7.2/apache2/php.ini") {
-                        our $real_config = "/etc/php/7.2/apache2/php.ini";
-		} elsif ( -f "/etc/php/7.2/fpm/php.ini") {
-			our $real_config = "/etc/php/7.2/fpm/php.ini";
+		my @php_version = (5, "7.0", 7,1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9);
+		foreach (@php_version) {
+			if ( -f "/etc/php${_}/apache2/php.ini" ) {
+				our $real_config = "/etc/php${_}/apache2/php.ini";
+				last;
+			} elsif ( -f "/etc/php/${_}/apache2/php.ini" ) {
+				our $real_config = "/etc/php/${_}/apache2/php.ini";
+				last;
+			} elsif ( -f "/etc/php/${_}/fpm/php.ini" ) {
+				our $real_config = "/etc/php/${_}/fpm/php.ini";
+				last;
+			}
 		}
 
 		our $real_config;
@@ -1270,19 +1267,18 @@ sub get_php_setting {
 		}
 	}
 
-        # if we find multiple definitions for the same element, we should 
-        # return the last one (just in case)
-        my $result;
+		# if we find multiple definitions for the same element, we should 
+		# return the last one (just in case)
+		my $result;
 
-        if ( @results > 1 ) {
-                $result = $results[@results - 1];
-        }
-        else {
-                $result = $results[0];
-        }
+		if ( @results > 1 ) {
+				$result = $results[@results - 1];
+		} else {
+				$result = $results[0];
+		}
 
-        # return the value to the main program
-        return $result;
+		# return the value to the main program
+		return $result;
 }
 
 sub date {
@@ -1312,7 +1308,6 @@ sub generate_standard_report {
 		$varnish_memory_usage_mbytes,
 		$phpfpm_memory_usage_mbytes,
 		$gluster_memory_usage_mbytes) = @_;
-
 
 	our @apache_uptime;
 	
@@ -1416,30 +1411,30 @@ sub generate_standard_report {
 		# make a logfile entry at /var/log/apache2buddy.log
 		open (LOGFILE, ">>/var/log/apache2buddy.log");
 		if ( our $apache_version =~ m/.*\s*\/2.4.*/) {
-        		print LOGFILE (date()." Uptime: \"$uptime\" Model: \"Prefork\" Memory: \"$available_mem MB\" MaxRequestWorkers: \"$maxclients\" Recommended: \"$max_rec_maxclients\" Smallest: \"$apache_proc_smallest MB\" Avg: \"$apache_proc_average MB\" Largest: \"$apache_proc_highest MB\" Highest Pct Remaining RAM: \"$max_potential_usage_pct_remain%\" \($max_potential_usage_pct_avail% TOTAL RAM)\n");
+			print LOGFILE (date()." Uptime: \"$uptime\" Model: \"Prefork\" Memory: \"$available_mem MB\" MaxRequestWorkers: \"$maxclients\" Recommended: \"$max_rec_maxclients\" Smallest: \"$apache_proc_smallest MB\" Avg: \"$apache_proc_average MB\" Largest: \"$apache_proc_highest MB\" Highest Pct Remaining RAM: \"$max_potential_usage_pct_remain%\" \($max_potential_usage_pct_avail% TOTAL RAM)\n");
 		} else {
-        		print LOGFILE (date()." Uptime: \"$uptime\"  Model: \"Prefork\" Memory: \"$available_mem MB\" Maxclients: \"$maxclients\" Recommended: \"$max_rec_maxclients\" Smallest: \"$apache_proc_smallest MB\" Avg: \"$apache_proc_average MB\" Largest: \"$apache_proc_highest MB\" Highest Pct Remaining RAM: \"$max_potential_usage_pct_remain%\" \($max_potential_usage_pct_avail% TOTAL RAM)\n");
+			print LOGFILE (date()." Uptime: \"$uptime\"  Model: \"Prefork\" Memory: \"$available_mem MB\" Maxclients: \"$maxclients\" Recommended: \"$max_rec_maxclients\" Smallest: \"$apache_proc_smallest MB\" Avg: \"$apache_proc_average MB\" Largest: \"$apache_proc_highest MB\" Highest Pct Remaining RAM: \"$max_potential_usage_pct_remain%\" \($max_potential_usage_pct_avail% TOTAL RAM)\n");
 		}
-        	close(LOGFILE);
+		close(LOGFILE);
 	
 	}
 	if ($model eq "worker") {
-			print "\t${CYAN}Apache appears to be running in worker mode.\n";
-			print "\tPlease check manually for backend processes such as PHP-FPM and pm.max_children.\n";
-			print "\tApache2buddy does not calculate maxclients for worker model.${ENDC}\n";
-			# make a logfile entry at /var/log/apache2buddy.log
-			open (LOGFILE, ">>/var/log/apache2buddy.log");
-        		print LOGFILE (date()." Uptime: \"$uptime\"  Model: \"Worker\" Memory: \"$available_mem MB\" Maxclients: \"$maxclients\" Recommended: \"N\\A\" Smallest: \"$apache_proc_smallest MB\" Avg: \"$apache_proc_average MB\" Largest: \"$apache_proc_highest MB\"\n");
-        		close(LOGFILE);
+		print "\t${CYAN}Apache appears to be running in worker mode.\n";
+		print "\tPlease check manually for backend processes such as PHP-FPM and pm.max_children.\n";
+		print "\tApache2buddy does not calculate maxclients for worker model.${ENDC}\n";
+		# make a logfile entry at /var/log/apache2buddy.log
+		open (LOGFILE, ">>/var/log/apache2buddy.log");
+		print LOGFILE (date()." Uptime: \"$uptime\"  Model: \"Worker\" Memory: \"$available_mem MB\" Maxclients: \"$maxclients\" Recommended: \"N\\A\" Smallest: \"$apache_proc_smallest MB\" Avg: \"$apache_proc_average MB\" Largest: \"$apache_proc_highest MB\"\n");
+		close(LOGFILE);
 	}	
 	if ($model eq "event") {
-			print "\t${CYAN}Apache appears to be running in event mode.\n";
-			print "\tPlease check manually for backend processes such as PHP-FPM and pm.max_children.\n";
-			print "\tApache2buddy does not calculate maxclients for worker model.${ENDC}\n";
-			# make a logfile entry at /var/log/apache2buddy.log
-			open (LOGFILE, ">>/var/log/apache2buddy.log");
-        		print LOGFILE (date()." Uptime: \"$uptime\"  Model: \"Event\" Memory: \"$available_mem MB\" Maxclients: \"$maxclients\" Recommended: \"N\\A\" Smallest: \"$apache_proc_smallest MB\" Avg: \"$apache_proc_average MB\" Largest: \"$apache_proc_highest MB\"\n");
-        		close(LOGFILE);
+		print "\t${CYAN}Apache appears to be running in event mode.\n";
+		print "\tPlease check manually for backend processes such as PHP-FPM and pm.max_children.\n";
+		print "\tApache2buddy does not calculate maxclients for worker model.${ENDC}\n";
+		# make a logfile entry at /var/log/apache2buddy.log
+		open (LOGFILE, ">>/var/log/apache2buddy.log");
+		print LOGFILE (date()." Uptime: \"$uptime\"  Model: \"Event\" Memory: \"$available_mem MB\" Maxclients: \"$maxclients\" Recommended: \"N\\A\" Smallest: \"$apache_proc_smallest MB\" Avg: \"$apache_proc_average MB\" Largest: \"$apache_proc_highest MB\"\n");
+		close(LOGFILE);
 	}
 	our $phpfpm_detected;
 	if ( $phpfpm_detected ) {
@@ -1536,8 +1531,8 @@ sub preflight_checks {
 
 	if ( $uid ne '0' ) {
 		show_crit_box();
- 	      	print "This script must be run as root.\n";
-        	exit;
+ 		print "This script must be run as root.\n";
+		exit;
 	} else {
 		if ( ! $NOOK ) { show_ok_box(); print "This script is being run as root.\n" }
 	}
@@ -1571,7 +1566,7 @@ sub preflight_checks {
 		exit;
 	} else {
 		if ( ! $NOOK ) { show_ok_box(); print "The utility 'netstat' exists and is available for use: ${CYAN}$netstat${ENDC}\n" }
-        }
+	}
 
 	# Check 3
 	# make sure PHP is available before we proceed
@@ -1599,27 +1594,27 @@ sub preflight_checks {
 	chomp($apachectl);
 
 	if ( $apachectl !~ m/.*\/apachectl/ ) {
-                show_info_box();
-                print "Unable to locate the apachectl utility. This script requires apachectl to analyze Apache's vhost configurations.\n";
-                show_info_box();
-                print "Not fatal yet, trying to locate the apache2ctl utility instead.\n";
+		show_info_box();
+		print "Unable to locate the apachectl utility. This script requires apachectl to analyze Apache's vhost configurations.\n";
+		show_info_box();
+		print "Not fatal yet, trying to locate the apache2ctl utility instead.\n";
 		# check to see if there is a binary called "apache2ctl" in our path
 		our $apachectl= `which apache2ctl`;
 		chomp($apachectl);
 	
 		if ( $apachectl !~ m/.*\/apache2ctl/ ) {
-       		        show_crit_box();
-              		print "Unable to locate the apache2ctl utility. This script now requires apache2ctl to analyze Apache's vhost configurations.\n";
-       		        show_info_box();
-              		print "It looks like you might be running something else, other than apache..\n";
+			show_crit_box();
+			print "Unable to locate the apache2ctl utility. This script now requires apache2ctl to analyze Apache's vhost configurations.\n";
+			show_info_box();
+			print "It looks like you might be running something else, other than apache..\n";
 			exit;
-        	} else {
-                	if ( ! $NOOK ) { show_ok_box(); print "The utility 'apache2ctl' exists and is available for use: ${CYAN}$apachectl${ENDC}\n" }
-        	}
+		} else {
+			if ( ! $NOOK ) { show_ok_box(); print "The utility 'apache2ctl' exists and is available for use: ${CYAN}$apachectl${ENDC}\n" }
+		}
 
-        } else {
-                if ( ! $NOOK ) { show_ok_box(); print "The utility 'apachectl' exists and is available for use: ${CYAN}$apachectl${ENDC}\n" }
-        }
+	} else {
+		if ( ! $NOOK ) { show_ok_box(); print "The utility 'apachectl' exists and is available for use: ${CYAN}$apachectl${ENDC}\n" }
+	}
 
 	
 
@@ -1675,19 +1670,19 @@ sub preflight_checks {
 		my @process_info = split(' ', `ps -C 'httpd httpd.worker apache apache2 /usr/sbin/httpd /usr/sbin/httpd.worker' -f | grep '^root'`);
 		$pid = $process_info[1];
 		if ( not $pid ) {
-                        show_crit_box; print "apache process not found.\n";
-                        exit;
-                } else {
-                        my $command = `netstat -plnt | egrep "httpd|apache2"`;
-                        if ( $command =~ /:+(\d+)/ ) { our $real_port = $1 }
-                        our $real_port;
-                        our $process_name = get_process_name($pid);
-                        our $apache_version = get_apache_version($process_name);
-                        if ( ! $NOINFO ) { show_info_box; print "Apache is actually listening on port ${CYAN}$real_port${ENDC}\n" }
-                        if ( ! $NOINFO ) { show_info_box; print "The process running on port ${CYAN}$real_port${ENDC} is ${CYAN}$apache_version${ENDC}.\n" }
+			show_crit_box; print "apache process not found.\n";
+			exit;
+		} else {
+			my $command = `netstat -plnt | egrep "httpd|apache2"`;
+			if ( $command =~ /:+(\d+)/ ) { our $real_port = $1 }
+			our $real_port;
+			our $process_name = get_process_name($pid);
+			our $apache_version = get_apache_version($process_name);
+			if ( ! $NOINFO ) { show_info_box; print "Apache is actually listening on port ${CYAN}$real_port${ENDC}\n" }
+			if ( ! $NOINFO ) { show_info_box; print "The process running on port ${CYAN}$real_port${ENDC} is ${CYAN}$apache_version${ENDC}.\n" }
 			# Issue #252 apache 2.2 is EOL
 			if ( ! $NOINFO ) { show_crit_box; print "${YELLOW}Apache 2.2 is End Of Life. For more Information, see ${CYAN}https://httpd.apache.org/.${ENDC}" }
-                }
+		}
 	} else {	
 		# now we get the name of the process running with the specified pid
 		our $process_name = get_process_name($pid);
@@ -1720,9 +1715,9 @@ sub preflight_checks {
 	
 			if ( !$pid ) {
 				show_crit_box();
-		                print "Could not find Apache process. Exiting...\n";
+				print "Could not find Apache process. Exiting...\n";
 				exit;
-		        } else {
+			} else {
 				# If we found it, then reset the proces_name, and version.
 				$process_name = get_process_name($pid);
 				our $apache_version = get_apache_version($process_name);
@@ -1777,9 +1772,9 @@ sub preflight_checks {
 		print "Unable to determine whether Apache is using worker or prefork\n";
 		exit;
 	} else {
-                # account for '\x{d}' strangeness
-                $model =~ s/\x{d}//;
-                if ( ! $NOINFO ) { show_info_box(); print "Apache is using ${CYAN}$model${ENDC} model.\n" }
+		# account for '\x{d}' strangeness
+		$model =~ s/\x{d}//;
+		if ( ! $NOINFO ) { show_info_box(); print "Apache is using ${CYAN}$model${ENDC} model.\n" }
 	}
 	
 	# Check 13	
@@ -1787,17 +1782,17 @@ sub preflight_checks {
 	our @config_array = build_config_array($full_apache_conf_file_path,$apache_root);
 	# determine what user apache runs as 
 	our $apache_user = find_master_value(\@config_array, $model, 'user');
-        # account for 'apache\x{d}' strangeness
-        $apache_user =~ s/\x{d}//;
-        $apache_user =~ s/^\s*(.*?)\s*$/$1/;; # address issue #19, strip whitespace from both sides.
+	# account for 'apache\x{d}' strangeness
+	$apache_user =~ s/\x{d}//;
+	$apache_user =~ s/^\s*(.*?)\s*$/$1/;; # address issue #19, strip whitespace from both sides.
 	unless ($apache_user eq "apache" or $apache_user eq "www-data") {
-                my $apache_userid = `id -u $apache_user`;
-                chomp($apache_userid);
-                # account for 'apache\x{d}' strangeness
-                $apache_user =~ s/\x{d}//;
-                show_warn_box(); print ("${RED}Non-standard apache set-up, apache is running as UID: ${CYAN}$apache_userid${RED} (${CYAN}$apache_user${RED}). Expecting UID 48 ('apache' or 'www-data').${ENDC}\n");
+		my $apache_userid = `id -u $apache_user`;
+		chomp($apache_userid);
+		# account for 'apache\x{d}' strangeness
+		$apache_user =~ s/\x{d}//;
+		show_warn_box(); print ("${RED}Non-standard apache set-up, apache is running as UID: ${CYAN}$apache_userid${RED} (${CYAN}$apache_user${RED}). Expecting UID 48 ('apache' or 'www-data').${ENDC}\n");
 		if ( ! $NOINFO ) { show_info_box(); print "Apache runs as ${CYAN}$apache_user${ENDC}.\n" }
-        }	
+	}
 	
 	if (length($apache_user) > 8) {
 		# Now we have to keep the first 7 characters and change the 8th character to a + sign, eg 'developer' becomes 'develop+'
@@ -1962,9 +1957,9 @@ sub preflight_checks {
 	if ( our $apache_version =~ m/.*\s*\/2.4.*/) {
 		our $maxclients = find_master_value(\@config_array, $model, 'maxrequestworkers');
 		if($maxclients eq 'CONFIG NOT FOUND') {
-      # Fallback to MaxClients if MaxRequestsPerWorker not found
-      $maxclients = find_master_value(\@config_array, $model, 'maxclients');
-    }
+			# Fallback to MaxClients if MaxRequestsPerWorker not found
+			$maxclients = find_master_value(\@config_array, $model, 'maxclients');
+		}
 		if($maxclients eq 'CONFIG NOT FOUND') {
 			if ( ! $NOWARN ) { show_warn_box; print "MaxRequestWorkers directive not found, assuming default values.\n" }
 			if ( $model eq "prefork") {
@@ -2007,7 +2002,7 @@ sub preflight_checks {
 	if ($model  eq "prefork") {
 		if ($maxclients > $serverlimit) {
 			$maxclients = $serverlimit;
-			 if ( ! $NOWARN ) { show_warn_box; print "MaxClients directive is higher than ServerLimit, using ServerLimit ($serverlimit) to apply calculations.\n" }
+			if ( ! $NOWARN ) { show_warn_box; print "MaxClients directive is higher than ServerLimit, using ServerLimit ($serverlimit) to apply calculations.\n" }
 		}
 	}
 
@@ -2247,19 +2242,19 @@ sub detect_php_fatal_errors {
 
 	if ($process_name eq "/usr/sbin/httpd" ) {
 		our $SCANDIR = "/var/log/httpd/";
-        } elsif ($process_name eq "/usr/local/apache/bin/httpd" ) {
+		} elsif ($process_name eq "/usr/local/apache/bin/httpd" ) {
 		our $SCANDIR = "/usr/local/apache/logs/";
-        } else {
+		} else {
 		our $SCANDIR = "/var/log/apache2/";
-        }
+		}
 	our $SCANDIR;
 	our %logfile_counts;
 	grep_php_fatal($SCANDIR);
 
 	if ($phpfpm_detected) {
-		our $SCANDIR = "/var/log/php-fpm/";
+		our $SCANDIR = "/var/log/";
 		our %logfile_counts;
-		grep_php_fatal($SCANDIR);
+		grep_php_fatal_php($SCANDIR);
 	}
 	our %logfile_counts;
 	if (%logfile_counts) {
@@ -2291,19 +2286,41 @@ sub detect_php_fatal_errors {
 sub grep_php_fatal {
 	my ($SCANDIR) = @_;
 	our %logfile_counts;
-        my @logfile_list;
-	find(sub {push @logfile_list, $File::Find::name  if ( -f $_ ) },  $SCANDIR);
-        foreach my $file (@logfile_list) {
-                our $phpfatalerror_hits = 0;
-                open(FILE, $file);
-                while (<FILE>) {
-                        $phpfatalerror_hits++ if $_ =~ /php fatal/i;
-                }
-                close(FILE);
-                if ($phpfatalerror_hits) {  $logfile_counts{ $file } =  $phpfatalerror_hits }
-        }
-}	
+	my @logfile_list;
 
+	find(sub {push @logfile_list, $File::Find::name  if ( -f $_ ) },  $SCANDIR);
+	foreach my $file (@logfile_list) {
+		our $phpfatalerror_hits = 0;
+		open(FILE, $file);
+		while (<FILE>) {
+			$phpfatalerror_hits++ if $_ =~ /php fatal/i;
+		}
+		close(FILE);
+		if ($phpfatalerror_hits) {  $logfile_counts{ $file } =  $phpfatalerror_hits }
+	}
+}
+
+sub grep_php_fatal_php {
+	my ($SCANDIR) = @_;
+	our %logfile_counts;
+	my @logfile_list;
+
+	find( sub {
+		return unless -f;
+		return unless /^php/;
+		push @logfile_list, $File::Find::name  if ( -f $_ )
+	},  $SCANDIR );
+	
+	foreach my $file (@logfile_list) {
+		our $phpfatalerror_hits = 0;
+		open(FILE, $file);
+		while (<FILE>) {
+			$phpfatalerror_hits++ if $_ =~ /php fatal/i;
+		}
+		close(FILE);
+		if ($phpfatalerror_hits) {  $logfile_counts{ $file } =  $phpfatalerror_hits }
+	}
+}
 
 sub detect_maxclients_hits {
 	our ($model, $process_name) = @_;
@@ -2367,6 +2384,9 @@ sub detect_php_memory_limit {
 
 sub get_service_memory_usage_mbytes {
 	my ( $svc )  = @_;
+
+	#print Dumper $svc;
+
 	if ($svc eq "varnishd") {
 		# we have to treat varnish somewhat differently due to changes made in 4.1+
 		my $vcache_detected = 0;
@@ -2375,20 +2395,20 @@ sub get_service_memory_usage_mbytes {
 		$vcache_detected = getpwnam("vcache");
 		if ( $vcache_detected ) {
 			my @usage_by_pids = `ps -U vcache -C varnishd -o rss | grep -v RSS`;
-                        our $usage_mbytes = 0;
-                        foreach my $proc (@usage_by_pids) {
-                                 our $usage_mbytes += $proc / 1024;
-                        }
-                        our $usage_mbytes = round($usage_mbytes);
-                        return $usage_mbytes;
+			our $usage_mbytes = 0;
+			foreach my $proc (@usage_by_pids) {
+					our $usage_mbytes += $proc / 1024;
+			}
+			our $usage_mbytes = round($usage_mbytes);
+			return $usage_mbytes;
 		} else {
 			my @usage_by_pids = `ps -C varnishd -o rss | grep -v RSS`;
-                	our $usage_mbytes = 0;
-                	foreach my $proc (@usage_by_pids) {
-                       		 our $usage_mbytes += $proc / 1024;
-                	}
-                	our $usage_mbytes = round($usage_mbytes);
-                	return $usage_mbytes;
+			our $usage_mbytes = 0;
+			foreach my $proc (@usage_by_pids) {
+						our $usage_mbytes += $proc / 1024;
+			}
+			our $usage_mbytes = round($usage_mbytes);
+			return $usage_mbytes;
 		}
 	} else {
 		my @usage_by_pids = `ps -C $svc -o rss | grep -v RSS`;
@@ -2482,18 +2502,21 @@ sub detect_additional_services {
 	# Detect PHP-FPM
 	our $phpfpm_detected = 0;
 	# Get PHP-FPM Memory Usage
-	$phpfpm_detected = `ps -C php-fpm -o rss | grep -v RSS` || `ps -C php5-fpm -o rss | grep -v RSS` || 0;
+	my $grep_php = `ps axco command | grep 'php-fpm*' | head -1`;
+	$grep_php =~ s/\R//g;
+
+	$phpfpm_detected = `ps -C ${grep_php} -o rss | grep -v RSS` || `ps -C php5-fpm -o rss | grep -v RSS` || 0;
 	if ( $phpfpm_detected ) { 
 		if ($VERBOSE) { print "VERBOSE: PHP-FPM Detected\n" }
 		our $servicefound_flag = 1;
 		# Get PHP-FPM Memory Usage
 		our $phpfpm = 0;
-		our $phpfpm = `ps -C php-fpm -o rss | grep -v RSS`; 
+		our $phpfpm = `ps -C ${grep_php} -o rss | grep -v RSS`; 
 		our $php5fpm = 0;
 		our $php5fpm = `ps -C php5-fpm -o rss | grep -v RSS`; 
 		if ( $phpfpm ) {
 			if ( ! $NOINFO ) { show_info_box(); print "${CYAN}PHP-FPM${ENDC} Detected => " }
-			our $phpfpm_memory_usage_mbytes = get_service_memory_usage_mbytes("php-fpm");
+			our $phpfpm_memory_usage_mbytes = get_service_memory_usage_mbytes($grep_php);
 		} elsif ( $php5fpm ) {
 			if ( ! $NOINFO ) { show_info_box(); print "${CYAN}PHP5-FPM${ENDC} Detected => " }
 			our $phpfpm_memory_usage_mbytes = get_service_memory_usage_mbytes("php5-fpm");
@@ -2533,33 +2556,33 @@ sub detect_additional_services {
 
 sub get_hostname {
 	our $hostname = `which hostname`;
-        chomp($hostname);
-        if ( $hostname eq '' ) {
-                show_crit_box();
-                print "Cannot find the 'hostname' executable.";
-                exit;
-        } else {
-                our $servername = `$hostname -f`;
-                chomp($servername);
+	chomp($hostname);
+	if ( $hostname eq '' ) {
+		show_crit_box();
+		print "Cannot find the 'hostname' executable.";
+		exit;
+	} else {
+		our $servername = `$hostname -f`;
+		chomp($servername);
 		return $servername;
-        }
+	}
 }
 
 sub get_ip {
-        our $curl = `which curl`;
-        chomp ($curl);
-        if ( $curl eq '' ) {
-                show_crit_box;
-                print "Cannot find the 'curl' executable.";
-                exit;
-        } else {
-                our $ip = `$curl -s myip.dnsomatic.com`;
-                if ($ip =~ /429 Too Many Requests/) {
-                        return "x.x.x.x";
-                } else {
-                        return $ip;
-                }
-        }
+		our $curl = `which curl`;
+		chomp ($curl);
+		if ( $curl eq '' ) {
+			show_crit_box;
+			print "Cannot find the 'curl' executable.";
+			exit;
+		} else {
+			our $ip = `$curl -s myip.dnsomatic.com`;
+			if ($ip =~ /429 Too Many Requests/) {
+				return "x.x.x.x";
+			} else {
+				return $ip;
+			}
+		}
 }
 
 ########################
@@ -2613,28 +2636,27 @@ our $httpd_detected = 0;
 our $httpd_detected = `ps -C httpd -o rss | grep -v RSS`;
 if ( $httpd_detected ) {
 if ( ! $NOINFO ) { show_info_box(); print "${CYAN}httpd${ENDC} " }
-        # Get httpd Memory Usage
-        our $httpd_memory_usage_mbytes = get_service_memory_usage_mbytes("httpd");
-        if ( ! $NOINFO ) { print "is currently using ${CYAN}$httpd_memory_usage_mbytes MB${ENDC} of memory.\n" }
+	# Get httpd Memory Usage
+	our $httpd_memory_usage_mbytes = get_service_memory_usage_mbytes("httpd");
+	if ( ! $NOINFO ) { print "is currently using ${CYAN}$httpd_memory_usage_mbytes MB${ENDC} of memory.\n" }
 } else {
-        our $httpd_memory_usage_mbytes = 0;
+	our $httpd_memory_usage_mbytes = 0;
 }
 # Detect apache2 
 our $apache2_detected = 0;
 our $apache2_detected = `ps -C apache2 -o rss | grep -v RSS`;
 if ( $apache2_detected ) {
 if ( ! $NOINFO ) { show_info_box(); print "${CYAN}apache2${ENDC} " }
-        # Get apache2 Memory Usage
-        our $apache2_memory_usage_mbytes = get_service_memory_usage_mbytes("apache2");
-        if ( ! $NOINFO ) { print "is currently using ${CYAN}$apache2_memory_usage_mbytes MB${ENDC} of memory.\n" }
+	# Get apache2 Memory Usage
+	our $apache2_memory_usage_mbytes = get_service_memory_usage_mbytes("apache2");
+	if ( ! $NOINFO ) { print "is currently using ${CYAN}$apache2_memory_usage_mbytes MB${ENDC} of memory.\n" }
 } else {
-        our $apache2_memory_usage_mbytes = 0;
+	our $apache2_memory_usage_mbytes = 0;
 }
 
 my $apache_proc_highest = get_memory_usage($process_name, $apache_user, 'high');
 my $apache_proc_lowest = get_memory_usage($process_name, $apache_user, 'low');
 my $apache_proc_average = get_memory_usage($process_name, $apache_user, 'average');
-
 
 if ( $model eq "prefork") {
 	if ( ! $NOINFO ) { show_info_box(); print "The smallest apache process is using ${CYAN}$apache_proc_lowest MB${ENDC} of memory\n" }
@@ -2687,12 +2709,12 @@ if ( $model eq "prefork") {
 			print "\t\tConsidering extra services: ${CYAN}$average_potential_use_pct_remain \%${ENDC} of remaining RAM\n";
 		}
 	} else {
-       		if ( ! $NOOK ) {
+		if ( ! $NOOK ) {
 			show_ok_box();
 			print "Going by the average Apache process, Apache can potentially use ${CYAN}$average_potential_use MB${ENDC} RAM:\n" .
 				"\t\tWithout considering services: ${CYAN}$average_potential_use_pct \%${ENDC} of total installed RAM\n" .
 				"\t\tConsidering extra services: ${CYAN}$average_potential_use_pct_remain \%${ENDC} of remaining RAM\n";
-		 }
+		}
 	}
 
 	my $highest_potential_use = $maxclients * $apache_proc_highest;
@@ -2717,11 +2739,11 @@ if ( $model eq "prefork") {
 			print "\t\tConsidering extra services: ${CYAN}$highest_potential_use_pct_remain \%${ENDC} of remaining RAM\n";
 		}
 	} else {
-	       	if ( ! $NOOK ) { 
-			show_ok_box();
-			print "Going by the largest Apache process, Apache can potentially use ${CYAN}$highest_potential_use MB${ENDC} RAM:\n" .
-				"\t\tWithout considering services: ${CYAN}$highest_potential_use_pct %${ENDC} of total installed RAM\n" . 
-				"\t\tConsidering extra services: ${CYAN}$highest_potential_use_pct_remain %${ENDC} of remaining RAM\n"; 
+		if ( ! $NOOK ) { 
+		show_ok_box();
+		print "Going by the largest Apache process, Apache can potentially use ${CYAN}$highest_potential_use MB${ENDC} RAM:\n" .
+			"\t\tWithout considering services: ${CYAN}$highest_potential_use_pct %${ENDC} of total installed RAM\n" . 
+			"\t\tConsidering extra services: ${CYAN}$highest_potential_use_pct_remain %${ENDC} of remaining RAM\n"; 
 		}
 	}
 }
