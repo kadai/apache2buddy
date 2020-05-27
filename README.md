@@ -1,12 +1,12 @@
 # execution
 
-## old method:
+## Usage:
 
-	# curl -sL apache2buddy.pl | perl
+	If you want to use this specific fork, please use the next command:
 
-## new method:
+	# curl -sL https://raw.githubusercontent.com/kadai/apache2buddy/staging/apache2buddy.pl | perl
 
-	# curl -sL https://raw.githubusercontent.com/kadai/apache2buddy/master/apache2buddy.pl | perl
+	Next, I am leaving most of the original readme below. As it contains important information you should look at. Also, I'll do my best to keep this repository updated but nothing is guaranted.
 
 # landing page
 
@@ -23,12 +23,12 @@
 	
 	Instead please run / bookmark the following:
 	
-	  # curl -sL https://raw.githubusercontent.com/kadai/apache2buddy/master/apache2buddy.pl | perl
+	  # curl -sL https://raw.githubusercontent.com/richardforth/apache2buddy/master/apache2buddy.pl | perl
 	  
 	This method is much safer.
 	
 	For more information on this change refer to the README.md:
-	https://github.com/kadai/apache2buddy/blob/master/README.md
+	https://github.com/richardforth/apache2buddy/blob/master/README.md
 	
 	Pay specific attention to the "Security Concerns" and 
 	"Typocamping is a thing and why you should be concerned" 
@@ -53,20 +53,20 @@ Example:
 	#!/bin/bash
 	# example of testing md5sums prior to execution
 	
-	scriptmd5sum=`curl -sL https://raw.githubusercontent.com/kadai/apache2buddy/master/apache2buddy.pl | md5sum | cut -d " " -f1`
-	originmd5sum=`curl -s https://raw.githubusercontent.com/kadai/apache2buddy/master/md5sums.txt | cut -d " " -f1`
+	scriptmd5sum=`curl -sL https://raw.githubusercontent.com/richardforth/apache2buddy/master/apache2buddy.pl | md5sum | cut -d " " -f1`
+	originmd5sum=`curl -s https://raw.githubusercontent.com/richardforth/apache2buddy/master/md5sums.txt | cut -d " " -f1`
 	echo $scriptmd5sum
 	echo $originmd5sum
 	if [ $scriptmd5sum == $originmd5sum ]
 	then
-	        scriptsha256sum=`curl -sL https://raw.githubusercontent.com/kadai/apache2buddy/master/apache2buddy.pl | sha256sum | cut -d " " -f1`
-	        originsha256sum=`curl -s https://raw.githubusercontent.com/kadai/apache2buddy/master/sha256sums.txt | cut -d " " -f1`
+	        scriptsha256sum=`curl -sL https://raw.githubusercontent.com/richardforth/apache2buddy/master/apache2buddy.pl | sha256sum | cut -d " " -f1`
+	        originsha256sum=`curl -s https://raw.githubusercontent.com/richardforth/apache2buddy/master/sha256sums.txt | cut -d " " -f1`
 	        echo $scriptsha256sum
 	        echo $originsha256sum
 	        if [ $scriptsha256sum == $originsha256sum ]
 	        then
 	                # execute the code, its safe - we can assume
-	                curl -sL https://raw.githubusercontent.com/kadai/apache2buddy/master/apache2buddy.pl | perl
+	                curl -sL https://raw.githubusercontent.com/richardforth/apache2buddy/master/apache2buddy.pl | perl
 	        else
 	                echo "Error: SHA256SUM mismatch, execution aborted."
 	        fi
@@ -90,7 +90,7 @@ While I do everything I can to ensure the code is clean and free from harmful bu
 
 In order to mitigate the risks I am now urging you to curl and perl directly from github, like so:
 
-	# curl -sL https://raw.githubusercontent.com/kadai/apache2buddy/master/apache2buddy.pl | perl
+	# curl -sL https://raw.githubusercontent.com/richardforth/apache2buddy/master/apache2buddy.pl | perl
 
 This is a MUCH safer method than curling the domain, and making a typo and being left at the mercy of "typocampers".
 
