@@ -2,11 +2,11 @@
 
 ## Usage:
 
-	If you want to use this specific fork, please use the next command:
+If you want to use this specific fork, please use the next command:
 
 	# curl -sL https://raw.githubusercontent.com/kadai/apache2buddy/staging/apache2buddy.pl | perl
 
-	Next, I am leaving most of the original readme below. As it contains important information you should look at. Also, I'll do my best to keep this repository updated but nothing is guaranted.
+Next, I am leaving most of the original readme below. As it contains important information you should look at. Also, I'll do my best to keep this repository updated but nothing is guaranted.
 
 # landing page
 
